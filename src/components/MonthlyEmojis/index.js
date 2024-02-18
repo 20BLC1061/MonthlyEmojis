@@ -1,8 +1,10 @@
 import {Component} from 'react'
 
-import './index.css'
+import EmojiItem from '../EmojiItem'
+import DayItem from '../DayItem'
+import DateItem from '../DateItem'
 
-// import CalenderDates from '../CalenderDates'
+import './index.css'
 
 const emojisList = [
   {
@@ -68,7 +70,7 @@ const daysList = [
   },
 ]
 
-const DatesList = [
+const initialDatesList = [
   {
     id: '380e6b12-a454-11ec-b909-0242ac120002',
     date: '01',
@@ -257,176 +259,173 @@ const DatesList = [
   },
 ]
 
-function getDayAbbreviation(date) {
-  switch (date % 7) {
-    case 1:
-      return 'Sun'
-    case 2:
-      return 'Mon'
-    case 3:
-      return 'Tue'
-    case 4:
-      return 'Wed'
-    case 5:
-      return 'Thu'
-    case 6:
-      return 'Fri'
-    case 7:
-      return 'Sat'
-    default:
-      return '' // Default case, handle if necessary
-  }
-}
-
 class MonthlyEmojis extends Component {
   state = {
-    activeEmoji: emojisList[0].emojiName,
-    initialDatesList: DatesList,
-    mood: emojisList[0].emojiName,
-    day: daysList[0].day,
+    activeEmojiId: emojisList[0].id,
+    datesList: initialDatesList,
+    selectedEmoji: emojisList[0].emojiUrl,
+    selectedDay: daysList[0].day,
   }
 
-  onChangeDay = e => {
-    this.setState({day: e.target.value})
+  onChangeEmojiOptionID = event => {
+    this.setState({selectedEmoji: event.target.value})
   }
 
-  onChangeMood = e => {
-    this.setState({mood: e.target.value})
+  onChangeWeekOptionID = event => {
+    this.setState({selectedDay: event.target.value})
   }
 
-  onClickDate = id => {
-    const {initialDatesList, activeEmoji} = this.state
+  getFilterCount = () => {
+    const {datesList, selectedEmoji, selectedDay} = this.state
 
-    const activeEmojiDetails = emojisList.find(
-      emoji => emoji.emojiName === activeEmoji,
+    let selectedDayIndex = daysList.findIndex(
+      eachDay => eachDay.day === selectedDay,
+    )
+    selectedDayIndex += 1
+
+    const filteredList = datesList.filter(
+      eachDate =>
+        (eachDate.date - selectedDayIndex) % 7 === 0 &&
+        eachDate.emojiUrl === selectedEmoji,
     )
 
-    const updatedDatesList = initialDatesList.map(date => {
-      if (date.id === id) {
-        return {
-          ...date,
-          emojiUrl: activeEmojiDetails.emojiUrl,
-          emojiName: activeEmojiDetails.emojiName,
-        }
-      }
-      return date
-    })
+    const filterCountValue = filteredList.length
 
-    this.setState({initialDatesList: updatedDatesList})
+    const value =
+      filterCountValue < 10 ? `0${filterCountValue}` : filterCountValue
+
+    return value
   }
 
-  onClickActiveEmoji = e => {
-    this.setState({activeEmoji: e.target.alt})
-  }
+  renderMonthFilters = () => {
+    const {selectedEmoji, selectedDay} = this.state
+    const filterCount = this.getFilterCount()
 
-  daysInMonth = () => (
-    <ul className="daysInMonth">
-      {daysList.map(day => (
-        <li className="day-name" key={day.id}>
-          <p key={day.day}>{day.day}</p>
-        </li>
-      ))}
-    </ul>
-  )
-
-  calenderDates = () => {
-    const {initialDatesList} = this.state
     return (
-      <ul className="calender-dates">
-        {initialDatesList.map(date => (
-          // <CalenderDates details={date} />
-          <li
-            key={date.id}
-            className="date"
-            onClick={() => this.onClickDate(date.id)}
+      <div className="filters-list">
+        <div className="select-fields-container">
+          <select
+            id="select"
+            className="input"
+            value={selectedEmoji}
+            onChange={this.onChangeEmojiOptionID}
           >
-            <button type="button" className="date-button">
-              {date.date}
-            </button>
-            {date.emojiUrl ? (
-              <img
-                className="date-emoji"
-                src={date.emojiUrl}
-                alt={date.emojiName}
-              />
-            ) : (
-              ''
-            )}
-          </li>
-        ))}
-      </ul>
+            {emojisList.map(eachOption => (
+              <option key={eachOption.id} value={eachOption.emojiUrl}>
+                {eachOption.emojiName}
+              </option>
+            ))}
+          </select>
+          <select
+            id="select"
+            className="input"
+            value={selectedDay}
+            onChange={this.onChangeWeekOptionID}
+          >
+            {daysList.map(eachOption => (
+              <option key={eachOption.id} value={eachOption.day}>
+                {eachOption.day}
+              </option>
+            ))}
+          </select>
+        </div>
+        <h1 className="filter-count-text">{filterCount}</h1>
+      </div>
     )
   }
 
-  emojisContainer = () => {
-    const {activeEmoji} = this.state
+  updateActiveEmojiId = id => {
+    this.setState({
+      activeEmojiId: id,
+    })
+  }
+
+  renderEmojisList = () => {
+    const {activeEmojiId} = this.state
 
     return (
-      <ul className="operations">
-        {emojisList.map(emoji => (
-          <li className="emoji" key={emoji.id}>
-            <button className="button emoji-name" type="button">
-              {emoji.emojiName}
-            </button>
-            <img
-              className={`${
-                activeEmoji === emoji.emojiName ? 'active-emoji' : 'emoji-img'
-              }`}
-              onClick={this.onClickActiveEmoji}
-              src={emoji.emojiUrl}
-              alt={emoji.emojiName}
-            />
-          </li>
+      <ul className="emojis-list">
+        {emojisList.map(eachEmojiItem => (
+          <EmojiItem
+            key={eachEmojiItem.id}
+            isActive={activeEmojiId === eachEmojiItem.id}
+            emojiDetails={eachEmojiItem}
+            updateActiveEmojiId={this.updateActiveEmojiId}
+          />
         ))}
       </ul>
     )
   }
 
-  dashboard = () => (
-    <div>
-      <select className="select-day" onChange={this.onChangeMood}>
-        {emojisList.map(emoji => (
-          <option key={emoji.id} value={emoji.emojiName} className="day-option">
-            {emoji.emojiName}
-          </option>
-        ))}
-      </select>
-      <select className="select-day" onChange={this.onChangeDay}>
-        {daysList.map(day => (
-          <option key={day.id} value={day.day} className="day-option">
-            {day.day}
-          </option>
-        ))}
-      </select>
-    </div>
-  )
+  updateDateItemEmoji = id => {
+    const {activeEmojiId, datesList} = this.state
+
+    const emojiObject = emojisList.find(
+      eachEmojiItem => eachEmojiItem.id === activeEmojiId,
+    )
+
+    const dateObject = datesList.find(eachDateItem => eachDateItem.id === id)
+
+    if (dateObject.emojiUrl === emojiObject.emojiUrl) {
+      this.setState(prevState => ({
+        datesList: prevState.datesList.map(eachDateItem => {
+          if (id === eachDateItem.id) {
+            return {...eachDateItem, emojiUrl: '', emojiName: ''}
+          }
+          return eachDateItem
+        }),
+      }))
+    } else {
+      this.setState(prevState => ({
+        datesList: prevState.datesList.map(eachDateItem => {
+          if (id === eachDateItem.id) {
+            const updatedEmojiUrl = emojiObject.emojiUrl
+            const updatedEmojiName = emojiObject.emojiName
+            return {
+              ...eachDateItem,
+              emojiUrl: updatedEmojiUrl,
+              emojiName: updatedEmojiName,
+            }
+          }
+          return eachDateItem
+        }),
+      }))
+    }
+  }
+
+  renderMonthList = () => {
+    const {datesList} = this.state
+
+    return (
+      <div className="month-container">
+        <h1 className="month-name">January</h1>
+        <ul className="week-days-list">
+          {daysList.map(eachDay => (
+            <DayItem key={eachDay.id} dayDetails={eachDay} />
+          ))}
+        </ul>
+        <ul className="dates-list">
+          {datesList.map(eachDate => (
+            <DateItem
+              key={eachDate.id}
+              dateDetails={eachDate}
+              updateDateItemEmoji={this.updateDateItemEmoji}
+            />
+          ))}
+        </ul>
+      </div>
+    )
+  }
 
   render() {
-    const {initialDatesList, mood, day} = this.state
-    const filteredList = initialDatesList.filter(
-      list =>
-        list.emojiName === mood &&
-        getDayAbbreviation(parseInt(list.date)) === day,
-    )
-    console.log(filteredList)
-    const count =
-      filteredList.length > 9 ? filteredList.length : `0${filteredList.length}`
-
     return (
-      <div className="MainContainer">
+      <div className="app-container">
         <h1 className="heading">Monthly Emojis</h1>
-        <div className="container">
-          <div className="CalenderContainer">
-            <h1 className="month-title">January</h1>
-            {this.daysInMonth()}
-            {this.calenderDates()}
-          </div>
-          <div className="OperationsContainer">
-            {this.emojisContainer()}
-            <div className="dashboard-operations">
-              {this.dashboard()}
-              <h1 className="count">{count}</h1>
-            </div>
+        <div className="dates-list-filter-container">
+          {this.renderMonthList()}
+          <div className="filters-container">
+            {this.renderEmojisList()}
+            {this.renderMonthFilters()}
           </div>
         </div>
       </div>
